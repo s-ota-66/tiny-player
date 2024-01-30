@@ -38,16 +38,27 @@ function applyEffect() {
     gainNode.gain.value = 1.0;  // 音量を半分に変更
 }
 
+function changeVolume(volume) {
+    if (gainNode) {
+        gainNode.gain.value = volume;
+    }
+}
+
 document.querySelector("#play").addEventListener("click", async () => {
     // 再生中なら二重に再生されないようにする
     if (isPlaying) return;
     const sample = await setupSample();
     playSample(ctx, sample);
-    applyEffect();  // エフェクトを適用
+    changeVolume(0.5);
 });
 
 // oscillatorを破棄し再生を停止する
 document.querySelector("#stop").addEventListener("click", async () => {
     sampleSource?.stop();
     isPlaying = false;
+});
+
+document.querySelector("#volume").addEventListener("input", function() {
+    const volumeValue = parseFloat(this.value);
+    changeVolume(volumeValue);
 });
