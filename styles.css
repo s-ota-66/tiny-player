@@ -1,0 +1,24 @@
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+button {
+    margin: 10px;
+}
+
+#volume-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#volume {
+    width: 10px;
+    height: 100px;
+    transform: rotate(270deg);
+    margin: 10px;
+}
