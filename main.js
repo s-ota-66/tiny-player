@@ -5,7 +5,20 @@ let gainNode;
 let effectNode;
 let isPlaying = false;
 var ctx;
+var selectedFile = null;
 
+// ファイル選択ダイアログの要素
+const fileInput = document.getElementById('fileInput');
+
+// ファイルが選択されたときの処理
+fileInput.addEventListener('change', async (event) => {
+    selectedFile = event.target.files[0];
+    if (selectedFile) {
+        // 選択されたファイル名を表示する
+        const selectedFileNameSpan = document.getElementById('selectedFileName');
+        selectedFileNameSpan.textContent = `Selected File: ${selectedFile.name}`;
+    }
+});
 
 // 音源を取得しAudioBuffer形式に変換して返す関数
 async function setupSample() {
@@ -26,8 +39,13 @@ async function setupSample() {
         );
     }
 
-    const response = await fetch("./assets/sample.mp3");
-    const arrayBuffer = await response.arrayBuffer();
+    let arrayBuffer;
+    if (selectedFile == null) {
+        const response = await fetch("./assets/sample.mp3");
+        arrayBuffer = await response.arrayBuffer();
+    } else {
+        arrayBuffer = await selectedFile.arrayBuffer();
+    }
     // Web Audio APIで使える形式に変換
     const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
     return audioBuffer;
@@ -40,7 +58,7 @@ function playSample(ctx, audioBuffer) {
 
     // 変換されたバッファーを音源として設定
     sampleSource.buffer = audioBuffer;
-    
+
     // GainNodeを接続
     applyEffect(document.querySelector("#effectToggle").checked);
 
@@ -90,4 +108,11 @@ document.querySelector("#volume").addEventListener("input", function () {
 
 document.querySelector("#effectToggle").addEventListener("change", function () {
     applyEffect(this.checked);
+});
+
+
+// ファイル選択ダイアログを表示するボタンを作成し、クリック時にダイアログを開く
+const fileSelectButton = document.getElementById('selectFile');
+fileSelectButton.addEventListener('click', () => {
+    fileInput.click();
 });
