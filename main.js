@@ -1,12 +1,31 @@
 window.AudioContext = window.AudioContext || window.webkitAudioContext;
-const ctx = new AudioContext();
 
 let sampleSource;
-let gainNode;  // GainNodeを格納する変数
+let gainNode;
+let effectNode;
 let isPlaying = false;
+var ctx;
+
 
 // 音源を取得しAudioBuffer形式に変換して返す関数
 async function setupSample() {
+    try {
+        ctx = new AudioContext();
+    }
+    catch (e) {
+        alert('Web Audio API is not supported in this browser');
+    }
+
+    try {
+        await ctx.audioWorklet.addModule('distortion-processor.js');
+        effectNode = new AudioWorkletNode(ctx, 'distortion-processor');
+    } catch (e) {
+        let err = e instanceof Error ? e : new Error(String(e));
+        throw new Error(
+            `Failed to load audio analyzer worklet at url. Further info: ${err.message}`
+        );
+    }
+
     const response = await fetch("./assets/sample.mp3");
     const arrayBuffer = await response.arrayBuffer();
     // Web Audio APIで使える形式に変換
@@ -21,21 +40,27 @@ function playSample(ctx, audioBuffer) {
 
     // 変換されたバッファーを音源として設定
     sampleSource.buffer = audioBuffer;
-
+    
     // GainNodeを接続
-    sampleSource.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    applyEffect(document.querySelector("#effectToggle").checked);
 
     // 出力につなげる
     sampleSource.start();
     isPlaying = true;
 }
 
-// エフェクトを追加する関数
-function applyEffect() {
-    // 独自のエフェクトをここに追加
-    // 例: 音量を変更する
-    gainNode.gain.value = 1.0;  // 音量を半分に変更
+function applyEffect(isChecked) {
+    console.log('Toggle Effect:', isChecked);
+
+    if (isChecked) {
+        sampleSource.connect(effectNode);
+        effectNode.connect(gainNode);
+        gainNode.connect(ctx.destination);
+    } else {
+        sampleSource.connect(gainNode);
+        effectNode.disconnect();
+        gainNode.connect(ctx.destination);
+    }
 }
 
 function changeVolume(volume) {
@@ -58,7 +83,11 @@ document.querySelector("#stop").addEventListener("click", async () => {
     isPlaying = false;
 });
 
-document.querySelector("#volume").addEventListener("input", function() {
+document.querySelector("#volume").addEventListener("input", function () {
     const volumeValue = parseFloat(this.value);
     changeVolume(volumeValue);
+});
+
+document.querySelector("#effectToggle").addEventListener("change", function () {
+    applyEffect(this.checked);
 });
