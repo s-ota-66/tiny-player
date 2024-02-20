@@ -60,6 +60,9 @@ function playSample(ctx, audioBuffer) {
     sampleSource.buffer = audioBuffer;
 
     // GainNodeを接続
+    gainNode.connect(ctx.destination);
+
+    // EffectNodeの接続
     applyEffect(document.querySelector("#effectToggle").checked);
 
     // 出力につなげる
@@ -70,14 +73,13 @@ function playSample(ctx, audioBuffer) {
 function applyEffect(isChecked) {
     console.log('Toggle Effect:', isChecked);
 
+    sampleSource.disconnect();
+    effectNode.disconnect();
     if (isChecked) {
         sampleSource.connect(effectNode);
         effectNode.connect(gainNode);
-        gainNode.connect(ctx.destination);
-    } else {
+    } else {        
         sampleSource.connect(gainNode);
-        effectNode.disconnect();
-        gainNode.connect(ctx.destination);
     }
 }
 
