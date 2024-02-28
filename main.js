@@ -87,6 +87,7 @@ function playSample(audioContext, audioBuffer) {
     applyEffect(document.querySelector("#effectToggle").checked);
 
     // 出力につなげる
+    sampleSource.loop = true;
     sampleSource.start();
     isPlaying = true;
 }
