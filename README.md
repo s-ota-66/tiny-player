@@ -31,7 +31,7 @@ Chromeが起動して実行します。
 
 Rubyの場合は以下になります。
 ```shell
-uby -r webrick -e "s = WEBrick::HTTPServer.new(:Port => 8000, :DocumentRoot => Dir.pwd); trap('INT') { s.shutdown }; s.start"
+ruby -r webrick -e "s = WEBrick::HTTPServer.new(:Port => 8000, :DocumentRoot => Dir.pwd); trap('INT') { s.shutdown }; s.start"
 ```
 
 Webブラウザから、localhost:8000 にアクセスすると起動します。
