@@ -5,10 +5,10 @@ let isPlaying = false;
 var audioContext;
 var selectedFile = null;
 
-class DistortionNode extends AudioWorkletNode {
+class EffectNode extends AudioWorkletNode {
 
-    constructor(context) {
-        super(context, 'distortion-processor');
+    constructor(context, options) {
+        super(context, 'effect-processor', options);
         this.port.onmessage = this.onMessage.bind(this);
     }
 
@@ -43,21 +43,13 @@ fileInput.addEventListener('change', async (event) => {
 async function setupSample() {
     try {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        await audioContext.resume();
     }
     catch (e) {
         alert('Web Audio API is not supported in this browser');
     }
 
-    try {
-        await audioContext.audioWorklet.addModule('./distortion-processor.js');
-        effectNode = new DistortionNode(audioContext, 'distortion-processor');
-    } catch (e) {
-        let err = e instanceof Error ? e : new Error(String(e));
-        throw new Error(
-            `Failed to load audio analyzer worklet at url. Further info: ${err.message}`
-        );
-    }
-
+    // ファイルをWeb Audio APIで使える形式に変換
     let arrayBuffer;
     if (selectedFile == null) {
         const response = await fetch("./assets/sample.mp3");
@@ -65,8 +57,27 @@ async function setupSample() {
     } else {
         arrayBuffer = await selectedFile.arrayBuffer();
     }
-    // Web Audio APIで使える形式に変換
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+    try {
+        await audioContext.audioWorklet.addModule('./wasm-worklet-processor.js');
+        // effectNode = new EffectNode(audioContext, 'effect-processor');
+        effectNode = new EffectNode(audioContext, {
+            processorOptions: {
+                numberOfChannels: audioBuffer.numberOfChannels,
+                sampleRate: audioBuffer.sampleRate
+            }
+        });
+
+        // await audioContext.audioWorklet.addModule('./distortion-processor.js');
+        // effectNode = new DistortionNode(audioContext, 'distortion-processor');
+    } catch (e) {
+        let err = e instanceof Error ? e : new Error(String(e));
+        throw new Error(
+            `Failed to load audio analyzer worklet at url. Further info: ${err.message}`
+        );
+    }
+
     return audioBuffer;
 }
 
@@ -78,15 +89,13 @@ function playSample(audioContext, audioBuffer) {
     // 変換されたバッファーを音源として設定
     sampleSource.buffer = audioBuffer;
 
-    // GainNodeを接続
-    sampleSource.connect(effectNode);
-    effectNode.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+    // ノードを接続
+    sampleSource.connect(effectNode).connect(gainNode).connect(audioContext.destination);
 
-    // EffectNodeの接続
+    // Effectの現在の状態を反映
     applyEffect(document.querySelector("#effectToggle").checked);
 
-    // 出力につなげる
+    // 再生開始
     sampleSource.loop = true;
     sampleSource.start();
     isPlaying = true;
@@ -127,6 +136,10 @@ document.querySelector("#effectToggle").addEventListener("change", function () {
     applyEffect(this.checked);
 });
 
+window.addEventListener('load', async () => {
+    const buttonPlay = document.getElementById('play');
+    buttonPlay.disabled = false;
+});
 
 // ファイル選択ダイアログを表示するボタンを作成し、クリック時にダイアログを開く
 const fileSelectButton = document.getElementById('selectFile');
