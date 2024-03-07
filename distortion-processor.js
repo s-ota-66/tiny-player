@@ -1,3 +1,6 @@
+// Distortionエフェクトのサンプル
+// 全てJavascriptで実装した場合
+
 class DistortionProcessor extends AudioWorkletProcessor {
 
     constructor() {
